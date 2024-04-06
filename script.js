@@ -1,68 +1,102 @@
 // Livya Kelly
-// Criar botões interativos e usar API
 
 document.addEventListener("DOMContentLoaded", function () {
-  const novaTarefaInput = document.getElementById("nova-tarefa");
-  const listaTarefas = document.getElementById("item-tarefas");
-  const lembreteTextarea = document.getElementById("lembrete");
+const novaTarefaInput = document.getElementById("nova-tarefa");
+const listaTarefas = document.getElementById("item-tarefas");
+const TODOIST_API_KEY = 'ccb5c67eb4ba4b4257843f0c4c0335b3a33ad151';
+let tarefaSelecionada = null;
 
-  // Carregar tarefas do Local Storage
-  function carregarTarefas() {
-    const tarefas = JSON.parse(localStorage.getItem("tarefas")) || [];
-    listaTarefas.innerHTML = "";
-    tarefas.forEach((tarefa, index) => {
-      adicionarTarefaDOM(tarefa.texto, tarefa.concluida, index);
+  function todoistGET(url, callback) {
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${TODOIST_API_KEY}`
+      }
+    })
+    .then(response => response.json())
+    .then(data => callback(data))
+    .catch(error => console.error('Erro ao buscar dados do Todoist:', error));
+  }
+
+  function todoistPOST(url, data, callback) {
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${TODOIST_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => callback(data))
+    .catch(error => console.error('Erro ao enviar dados para o Todoist:', error));
+  }
+
+  function todoistDELETE(url, callback) {
+    fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${TODOIST_API_KEY}`
+      }
+    })
+    .then(response => {
+      if (response.ok) {
+        callback(true);
+      } else {
+        throw new Error('Falha ao deletar tarefa');
+      }
+    })
+    .catch(error => {
+      console.error('Erro ao deletar tarefa do Todoist:', error);
+      callback(false);
     });
   }
 
-  function salvarTarefas() {
+  function salvarTarefasLocalStorage() {
     const tarefas = [];
-    document.querySelectorAll("#item-tarefas li").forEach((li) => {
-      tarefas.push({
-        texto: li.querySelector("span").textContent,
-        concluida: li.querySelector("input").checked,
-      });
+    listaTarefas.querySelectorAll("li").forEach(li => {
+      const id = li.getAttribute("data-task-id");
+      const texto = li.querySelector("span").textContent;
+      const concluida = li.querySelector("input[type='checkbox']").checked;
+      tarefas.push({ id, texto, concluida });
     });
     localStorage.setItem("tarefas", JSON.stringify(tarefas));
   }
 
-  function adicionarTarefaDOM(texto, concluida = false, index) {
+  function carregarTarefasLocalStorage() {
+    const tarefas = JSON.parse(localStorage.getItem("tarefas")) || [];
+    tarefas.forEach(tarefa => {
+      adicionarTarefaDOM(tarefa.texto, tarefa.concluida, tarefa.id);
+    });
+  }
+
+  function carregarTarefas() {
+    todoistGET('https://api.todoist.com/rest/v2/tasks', (tarefas) => {
+      listaTarefas.innerHTML = "";
+      tarefas.forEach((tarefa) => {
+        adicionarTarefaDOM(tarefa.content, false, tarefa.id);
+      });
+      salvarTarefasLocalStorage(); // Salva tarefas do Todoist no localStorage
+    });
+  }
+
+  function adicionarTarefaDOM(texto, concluida, id) {
     const li = document.createElement("li");
+    li.setAttribute('data-task-id', id);
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = concluida;
     checkbox.onchange = function () {
-      salvarTarefas();
+      atualizarTarefaConcluida(id, this.checked);
     };
-
-    document.getElementById('nova-tarefa').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault(); // Previne a ação padrão do Enter
-            document.querySelector('.input-1 button').click(); 
-        }
-    });
-
-    let selectedItem = null;
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Delete' && selectedItem) {
-            selectedItem.remove(); // Remove o item selecionado
-            salvarTarefas(); // Salva o estado atual das tarefas no localStorage
-            selectedItem = null; // Reseta o item selecionado
-        }
-    });
 
     const span = document.createElement("span");
     span.textContent = texto;
-    if (concluida) {
-      span.style.textDecoration = "line-through";
-    }
 
     const removeBtn = document.createElement("button");
     removeBtn.textContent = "Remover";
     removeBtn.onclick = function () {
-      li.remove();
-      salvarTarefas();
+      deletarTarefa(id);
     };
 
     li.appendChild(checkbox);
@@ -71,63 +105,76 @@ document.addEventListener("DOMContentLoaded", function () {
     listaTarefas.appendChild(li);
   }
 
+  // Evento para adicionar tarefa com Enter
+  novaTarefaInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault(); 
+      document.querySelector(".input-1 button").click(); 
+    }
+  });
+
   document.querySelector(".input-1 button").onclick = function () {
     const texto = novaTarefaInput.value.trim();
     if (texto) {
-      adicionarTarefaDOM(texto);
-      novaTarefaInput.value = "";
-      salvarTarefas();
+      todoistPOST('https://api.todoist.com/rest/v2/tasks', { content: texto }, (tarefa) => {
+        adicionarTarefaDOM(texto, false, tarefa.id);
+        novaTarefaInput.value = "";
+        salvarTarefasLocalStorage(); // Atualiza o localStorage após adicionar uma nova tarefa
+      });
     }
   };
 
-  // Função para salvar lembretes 
-  document.querySelector(".btn-lembrete").onclick = function () {
-    localStorage.setItem("lembrete", lembreteTextarea.value);
-  };
+  function atualizarTarefaConcluida(taskId, concluida) {
+    const url = concluida ? 
+    `https://api.todoist.com/rest/v2/tasks/${taskId}/close` :
+    `https://api.todoist.com/rest/v2/tasks/${taskId}/reopen`;
 
-  // Carregar lembretes e tarefas ao carregar a página
-  function carregarLembretes() {
-    const lembrete = localStorage.getItem("lembrete");
-    if (lembrete) {
-      lembreteTextarea.value = lembrete;
-      alert(lembrete);
-    }
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${TODOIST_API_KEY}`
+      }
+    })
+    .then(response => {
+      if (response.ok) {
+        console.log('Tarefa atualizada com sucesso.');
+        carregarTarefas(); // Recarrega as tarefas do Todoist e atualiza o localStorage
+      } else {
+        throw new Error('Falha ao atualizar tarefa');
+      }
+    })
+    .catch(error => {
+      console.error('Erro ao atualizar tarefa:', error);
+    });
   }
 
-  carregarTarefas();
-  carregarLembretes();
-});
-
-// API do google
-
-function authenticate() {
-  return gapi.auth2
-    .getAuthInstance()
-    .signIn({ scope: "https://www.googleapis.com/auth/tasks" })
-    .then(
-      function () {
-        console.log("Sign-in successful");
-      },
-      function (err) {
-        console.error("Error signing in", err);
+  function deletarTarefa(taskId) {
+    todoistDELETE(`https://api.todoist.com/rest/v2/tasks/${taskId}`, (success) => {
+      if (success) {
+        document.querySelector(`[data-task-id="${taskId}"]`).remove();
+        salvarTarefasLocalStorage(); // Atualiza o localStorage após deletar uma tarefa
       }
-    );
-}
+    });
+  }
 
-function loadClient() {
-  gapi.client.setApiKey("b0c3RHVuc1FqcU9kT0ZSMg");
-  return gapi.client
-    .load("https://tasks.googleapis.com/$discovery/rest?version=v1")
-    .then(
-      function () {
-        console.log("GAPI client loaded for API");
-      },
-      function (err) {
-        console.error("Error loading GAPI client for API", err);
-      }
-    );
-}
+  // Função para salvar lembretes no localStorage
+  function salvarLembretes() {
+    const lembrete = document.getElementById("lembrete").value;
+    localStorage.setItem("lembretes", lembrete); 
+  }
 
-gapi.load("client:auth2", function () {
-  gapi.auth2.init({ client_id: "YOUR_CLIENT_ID" });
+  document.getElementById("lembrete").addEventListener("input", salvarLembretes);
+
+  // Função para carregar lembretes
+  function carregarLembretes() {
+    const lembrete = localStorage.getItem("lembretes"); 
+    if (lembrete) {
+      document.getElementById("lembrete").value = lembrete; 
+    }
+    alert(lembrete);
+  }
+
+    carregarLembretes(); // Carrega os lembretes ao iniciar
+    carregarTarefasLocalStorage(); // Carrega as tarefas do localStorage ao iniciar
+    carregarTarefas(); // Comenta esta linha se deseja usar apenas as tarefas do localStorage
 });
