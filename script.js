@@ -1,10 +1,7 @@
-// Livya Kelly
-
 document.addEventListener("DOMContentLoaded", function () {
 const novaTarefaInput = document.getElementById("nova-tarefa");
 const listaTarefas = document.getElementById("item-tarefas");
 const TODOIST_API_KEY = 'ccb5c67eb4ba4b4257843f0c4c0335b3a33ad151';
-let tarefaSelecionada = null;
 
   function todoistGET(url, callback) {
     fetch(url, {
@@ -52,6 +49,11 @@ let tarefaSelecionada = null;
     });
   }
 
+  document.getElementById('form-tarefas').addEventListener('submit', function(event) {
+    event.preventDefault();
+    adicionarTarefa(); 
+  });
+
   function salvarTarefasLocalStorage() {
     const tarefas = [];
     listaTarefas.querySelectorAll("li").forEach(li => {
@@ -76,11 +78,11 @@ let tarefaSelecionada = null;
       tarefas.forEach((tarefa) => {
         adicionarTarefaDOM(tarefa.content, false, tarefa.id);
       });
-      salvarTarefasLocalStorage(); // Salva tarefas do Todoist no localStorage
+      salvarTarefasLocalStorage(); 
     });
   }
 
-  function adicionarTarefaDOM(texto, concluida, id) {
+  function adicionarTarefaDOM(texto, concluida, id, data) {
     const li = document.createElement("li");
     li.setAttribute('data-task-id', id);
     const checkbox = document.createElement("input");
@@ -89,9 +91,20 @@ let tarefaSelecionada = null;
     checkbox.onchange = function () {
       atualizarTarefaConcluida(id, this.checked);
     };
-
+      
     const span = document.createElement("span");
     span.textContent = texto;
+
+    const partesData = data.split("-"); 
+      
+    const dataFormatada = new Date(partesData[0], partesData[1] - 1, partesData[2]).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+
+    const spanData = document.createElement("span");
+    spanData.textContent = ` ${dataFormatada}`;
 
     const removeBtn = document.createElement("button");
     removeBtn.textContent = "Remover";
@@ -101,25 +114,19 @@ let tarefaSelecionada = null;
 
     li.appendChild(checkbox);
     li.appendChild(span);
+    li.appendChild(spanData);
     li.appendChild(removeBtn);
     listaTarefas.appendChild(li);
   }
 
-  // Evento para adicionar tarefa com Enter
-  novaTarefaInput.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') {
-      e.preventDefault(); 
-      document.querySelector(".input-1 button").click(); 
-    }
-  });
-
   document.querySelector(".input-1 button").onclick = function () {
     const texto = novaTarefaInput.value.trim();
-    if (texto) {
+    const dataTarefa = document.getElementById("data-tarefa").value; 
+    if (texto && dataTarefa) {
       todoistPOST('https://api.todoist.com/rest/v2/tasks', { content: texto }, (tarefa) => {
-        adicionarTarefaDOM(texto, false, tarefa.id);
+        adicionarTarefaDOM(texto, false, tarefa.id, dataTarefa);
         novaTarefaInput.value = "";
-        salvarTarefasLocalStorage(); // Atualiza o localStorage após adicionar uma nova tarefa
+        salvarTarefasLocalStorage(); 
       });
     }
   };
@@ -138,7 +145,7 @@ let tarefaSelecionada = null;
     .then(response => {
       if (response.ok) {
         console.log('Tarefa atualizada com sucesso.');
-        carregarTarefas(); // Recarrega as tarefas do Todoist e atualiza o localStorage
+        carregarTarefas(); 
       } else {
         throw new Error('Falha ao atualizar tarefa');
       }
@@ -152,12 +159,11 @@ let tarefaSelecionada = null;
     todoistDELETE(`https://api.todoist.com/rest/v2/tasks/${taskId}`, (success) => {
       if (success) {
         document.querySelector(`[data-task-id="${taskId}"]`).remove();
-        salvarTarefasLocalStorage(); // Atualiza o localStorage após deletar uma tarefa
+        salvarTarefasLocalStorage(); 
       }
     });
   }
 
-  // Função para salvar lembretes no localStorage
   function salvarLembretes() {
     const lembrete = document.getElementById("lembrete").value;
     localStorage.setItem("lembretes", lembrete); 
@@ -165,7 +171,6 @@ let tarefaSelecionada = null;
 
   document.getElementById("lembrete").addEventListener("input", salvarLembretes);
 
-  // Função para carregar lembretes
   function carregarLembretes() {
     const lembrete = localStorage.getItem("lembretes"); 
     if (lembrete) {
@@ -174,7 +179,7 @@ let tarefaSelecionada = null;
     alert(lembrete);
   }
 
-    carregarLembretes(); // Carrega os lembretes ao iniciar
-    carregarTarefasLocalStorage(); // Carrega as tarefas do localStorage ao iniciar
-    carregarTarefas(); // Comenta esta linha se deseja usar apenas as tarefas do localStorage
+    carregarLembretes(); 
+    carregarTarefasLocalStorage();
+    carregarTarefas(); 
 });

@@ -11,19 +11,21 @@
     <main>
       <div class="container">
         <h1>Lista de Tarefas</h1>
-        <div class="input-1">
+          <form id="form-tarefas" class="input-1">
             <input type="text" id="nova-tarefa" placeholder="Adicione uma tarefa"/>
-            <button class="btn-1" onclick="addTarefa()">Adicionar</button>
-            <button class="btn-1" onclick="authenticate().then(loadClient)">Atualizar</button>
-        </div>
+            <input type="date" id="data-tarefa" placeholder="Data da tarefa"/>
+            <button type="submit" class="btn-1" onclick="addTarefa()">Adicionar</button>
+          </form>
         <ul id="item-tarefas" class="lista-tarefa"></ul>
+        
         <h2>LEMBRETES</h2>
-        <div class="input-2">
-          <textarea id="lembrete"></textarea>
-          <button class="btn-lembrete" onclick="salvarlembretes()">Salvar Lembretes</button>
-        </div>
+          <form id="form-tarefas-2" class="input-2">
+            <textarea id="lembrete"></textarea>
+            <button type="submit" class="btn-lembrete" onclick="salvarlembretes()">Salvar Lembretes</button>
+          </form>
         <p class="criadora">Desenvolvida por <span>Livya Kelly</span></p>
       </div>
+    </main>
       <script src="script.js"></script>
     </main>
   </body>
