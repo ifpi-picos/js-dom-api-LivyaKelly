@@ -87,6 +87,31 @@ document.addEventListener("DOMContentLoaded", function () {
       spanData = document.createElement("span");
       spanData.textContent = ` ${dataFormatada}`;
     }
+    
+    function salvarTarefasNoCache(tarefas) {
+      localStorage.setItem("tarefasCache", JSON.stringify(tarefas));
+    }
+    
+    function carregarTarefasDoCache() {
+      const tarefasCache = localStorage.getItem("tarefasCache");
+      if (tarefasCache) {
+        const tarefas = JSON.parse(tarefasCache);
+        tarefas.forEach((tarefa) => {
+          adicionarTarefaDOM(tarefa.content, false, tarefa.id, tarefa.due ? tarefa.due.date : null);
+        });
+      }
+    }
+    
+    function carregarTarefas() {
+      todoistGET('https://api.todoist.com/rest/v2/tasks', (tarefas) => {
+        listaTarefas.innerHTML = "";
+        tarefas.forEach((tarefa) => {
+          adicionarTarefaDOM(tarefa.content, false, tarefa.id, tarefa.due ? tarefa.due.date : null);
+        });
+        salvarTarefasNoCache(tarefas); // Salvar o cache após carregar as tarefas
+      });
+    }
+    
 
     const removeBtn = document.createElement("button");
     removeBtn.textContent = "Remover";
