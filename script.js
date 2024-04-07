@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
-const novaTarefaInput = document.getElementById("nova-tarefa");
-const listaTarefas = document.getElementById("item-tarefas");
-const TODOIST_API_KEY = 'ccb5c67eb4ba4b4257843f0c4c0335b3a33ad151';
+  const novaTarefaInput = document.getElementById("nova-tarefa");
+  const listaTarefas = document.getElementById("item-tarefas");
+  const TODOIST_API_KEY = 'ccb5c67eb4ba4b4257843f0c4c0335b3a33ad151';
 
   function todoistGET(url, callback) {
     fetch(url, {
@@ -54,34 +54,15 @@ const TODOIST_API_KEY = 'ccb5c67eb4ba4b4257843f0c4c0335b3a33ad151';
     adicionarTarefa(); 
   });
 
-  function salvarTarefasLocalStorage() {
-    const tarefas = [];
-    listaTarefas.querySelectorAll("li").forEach(li => {
-      const id = li.getAttribute("data-task-id");
-      const texto = li.querySelector("span").textContent;
-      const concluida = li.querySelector("input[type='checkbox']").checked;
-      tarefas.push({ id, texto, concluida });
-    });
-    localStorage.setItem("tarefas", JSON.stringify(tarefas));
-  }
-
-  function carregarTarefasLocalStorage() {
-    const tarefas = JSON.parse(localStorage.getItem("tarefas")) || [];
-    tarefas.forEach(tarefa => {
-      adicionarTarefaDOM(tarefa.texto, tarefa.concluida, tarefa.id);
-    });
-  }
-
   function carregarTarefas() {
     todoistGET('https://api.todoist.com/rest/v2/tasks', (tarefas) => {
       listaTarefas.innerHTML = "";
       tarefas.forEach((tarefa) => {
-        adicionarTarefaDOM(tarefa.content, false, tarefa.id);
+        adicionarTarefaDOM(tarefa.content, false, tarefa.id, tarefa.due ? tarefa.due.date : null);
       });
-      salvarTarefasLocalStorage(); 
     });
   }
-
+  
   function adicionarTarefaDOM(texto, concluida, id, data) {
     const li = document.createElement("li");
     li.setAttribute('data-task-id', id);
@@ -91,20 +72,21 @@ const TODOIST_API_KEY = 'ccb5c67eb4ba4b4257843f0c4c0335b3a33ad151';
     checkbox.onchange = function () {
       atualizarTarefaConcluida(id, this.checked);
     };
-      
+
     const span = document.createElement("span");
     span.textContent = texto;
 
-    const partesData = data.split("-"); 
-      
-    const dataFormatada = new Date(partesData[0], partesData[1] - 1, partesData[2]).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-
-    const spanData = document.createElement("span");
-    spanData.textContent = ` ${dataFormatada}`;
+    let spanData;
+    if (data) {
+      const partesData = data.split("-");
+      const dataFormatada = new Date(partesData[0], partesData[1] - 1, partesData[2]).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+      spanData = document.createElement("span");
+      spanData.textContent = ` ${dataFormatada}`;
+    }
 
     const removeBtn = document.createElement("button");
     removeBtn.textContent = "Remover";
@@ -114,19 +96,20 @@ const TODOIST_API_KEY = 'ccb5c67eb4ba4b4257843f0c4c0335b3a33ad151';
 
     li.appendChild(checkbox);
     li.appendChild(span);
-    li.appendChild(spanData);
+    if (spanData) {
+      li.appendChild(spanData);
+    }
     li.appendChild(removeBtn);
     listaTarefas.appendChild(li);
   }
 
   document.querySelector(".input-1 button").onclick = function () {
     const texto = novaTarefaInput.value.trim();
-    const dataTarefa = document.getElementById("data-tarefa").value; 
+    const dataTarefa = document.getElementById("data-tarefa").value;
     if (texto && dataTarefa) {
-      todoistPOST('https://api.todoist.com/rest/v2/tasks', { content: texto }, (tarefa) => {
+      todoistPOST('https://api.todoist.com/rest/v2/tasks', { content: texto, due_date: dataTarefa }, (tarefa) => {
         adicionarTarefaDOM(texto, false, tarefa.id, dataTarefa);
         novaTarefaInput.value = "";
-        salvarTarefasLocalStorage(); 
       });
     }
   };
@@ -137,30 +120,28 @@ const TODOIST_API_KEY = 'ccb5c67eb4ba4b4257843f0c4c0335b3a33ad151';
     `https://api.todoist.com/rest/v2/tasks/${taskId}/reopen`;
 
     fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${TODOIST_API_KEY}`
-      }
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${TODOIST_API_KEY}`
+        }
     })
     .then(response => {
-      if (response.ok) {
-        console.log('Tarefa atualizada com sucesso.');
-        carregarTarefas(); 
-      } else {
-        throw new Error('Falha ao atualizar tarefa');
-      }
+        if (response.ok) {
+            console.log('Tarefa atualizada com sucesso.');
+        } else {
+            throw new Error('Falha ao atualizar tarefa');
+        }
     })
     .catch(error => {
-      console.error('Erro ao atualizar tarefa:', error);
+        console.error('Erro ao atualizar tarefa:', error);
     });
   }
 
   function deletarTarefa(taskId) {
     todoistDELETE(`https://api.todoist.com/rest/v2/tasks/${taskId}`, (success) => {
-      if (success) {
-        document.querySelector(`[data-task-id="${taskId}"]`).remove();
-        salvarTarefasLocalStorage(); 
-      }
+        if (success) {
+            document.querySelector(`[data-task-id="${taskId}"]`).remove();
+        }
     });
   }
 
@@ -177,9 +158,8 @@ const TODOIST_API_KEY = 'ccb5c67eb4ba4b4257843f0c4c0335b3a33ad151';
       document.getElementById("lembrete").value = lembrete; 
     }
     alert(lembrete);
-  }
-
-    carregarLembretes(); 
-    carregarTarefasLocalStorage();
-    carregarTarefas(); 
+  }  
+  
+  carregarLembretes();
+  carregarTarefas(); 
 });
