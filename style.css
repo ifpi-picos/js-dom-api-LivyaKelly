@@ -34,13 +34,14 @@ h2,
 }
 
 button {
-  width: 100px;
+  width: 115px;
   height: 39px;
   padding: 10px;
   border: none;
   background-color: #0f51b5;
   color: white;
-  border-radius: 5px;
+  border: 2px solid #2a3f5f;
+  border-radius: 4px;
   cursor: pointer;
   display: flex;
   justify-content: center;
@@ -77,7 +78,7 @@ input[type="checkbox"] {
 #data-tarefa {
   width: 100px;
   height: 17px;
-  padding: 10px;
+  padding: 9.5px;
   border: none;
   background-color: white;
   color: #0f51b5;
@@ -90,11 +91,10 @@ input[type="checkbox"] {
 }
 
 .btn-1 {
-    margin-right: 8px;
+  margin-right: 4px;
 }
 
 .lista-tarefa {
-  /* list-style: none; */
   padding: 0;
   margin-bottom: 35px;
 }
@@ -112,17 +112,22 @@ input[type="checkbox"] {
   flex: 1;
 }
 
+.fa-trash {
+  margin-left: 10px;
+  color: #2a3f5f;
+}
+
 #lembrete {
   width: 99%;
   border: 2px solid #2a3f5f;
   border-radius: 4px;
   margin-top: 5px;
-  height: 88px;
+  height: 70px;
 }
 
 .btn-lembrete {
-    width: 130px;
-    margin-top: 5px;
+  width: 130px;
+  margin-top: 5px;
 }
 
 .criadora span {

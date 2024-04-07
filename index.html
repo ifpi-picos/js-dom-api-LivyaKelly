@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="Autora" content="Livya Kelly" />
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <title>Lista de Tarefas</title>
   </head>
   <body>
@@ -13,7 +14,7 @@
         <h1>Lista de Tarefas</h1>
           <form id="form-tarefas" class="input-1">
             <input type="text" id="nova-tarefa" placeholder="Adicione uma tarefa"/>
-            <input type="date" id="data-tarefa" placeholder="Data da tarefa"/>
+            <input type="date" id="data-tarefa" class="data" placeholder="Data da tarefa"/>
             <button type="submit" class="btn-1" onclick="addTarefa()">Adicionar</button>
           </form>
         <ul id="item-tarefas" class="lista-tarefa"></ul>
@@ -23,7 +24,7 @@
             <textarea id="lembrete"></textarea>
             <button type="submit" class="btn-lembrete" onclick="salvarlembretes()">Salvar Lembretes</button>
           </form>
-        <p class="criadora">Desenvolvida por <span>Livya Kelly</span></p>
+        <p class="criadora">Desenvolvido por <span>Livya Kelly</span></p>
       </div>
     </main>
       <script src="script.js"></script>
